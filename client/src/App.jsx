@@ -1,34 +1,53 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { useEffect, useMemo, useState } from 'react'
+import { io } from 'socket.io-client'
+const App = () => {
+  const [message, setMessage] = useState('');
+  const [currentRoomId, setCurrentRoomId] = useState('');
+  const [receiverRoomId, setReceiverRoomId] = useState('');
+  const [roomName, setRoomName] = useState('');
+  // const socket = io("http://localhost:8000/");
+  const socket = useMemo(() => io("http://localhost:8000/"), []);
+  useEffect(() => {
+    socket.on("connect", () => {
+      // console.log("Connected", socket.id)
+      setCurrentRoomId(socket.id);
+    });
 
-function App() {
-  const [count, setCount] = useState(0)
 
+
+    socket.on("receive-message", (data) => {
+      console.log(data);
+    })
+  }, [])
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    socket.emit("message", { message, receiverRoomId });
+    setMessage("");
+    setReceiverRoomId("")
+  }
+  const handleJoinRoom = (e) => {
+    e.preventDefault();
+    socket.emit("join-room", roomName);
+    setRoomName("");
+  }
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div>
+      <p> {currentRoomId} </p>
+      <form onSubmit={(e) => handleJoinRoom(e)} >
+        <input type='text' value={roomName} onChange={(e) => setRoomName(e.target.value)} placeholder='Enter Room Name' />
+        <br />
+        <button type='submit' >Send</button>
+      </form>
+      <br />
+      <form onSubmit={(e) => handleSubmit(e)} >
+        <input type='text' value={message} onChange={(e) => setMessage(e.target.value)} placeholder='Enter message' />
+        <br />
+        <input type='text' value={receiverRoomId} onChange={(e) => setReceiverRoomId(e.target.value)} placeholder='Enter Room Id' />
+        <br />
+        <button type='submit' >Send</button>
+      </form>
+    </div>
   )
 }
 
